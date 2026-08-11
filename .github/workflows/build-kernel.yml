@@ -43,15 +43,6 @@ jobs:
           INC=""
           echo "=== no global -I (per-directory ccflags-y only) ==="
           make CC=clang LLVM=1 LLVM_IAS=1 vendor/kona-perf-pidns_defconfig
-          # --- qcacld E2BIG diagnostics ---
-          echo "=== ulimit / ARG_MAX ==="
-          ulimit -a | grep -iE "arg|stack" || true
-          getconf ARG_MAX || true
-          echo "=== qcacld real-obj-y stats (words=count chars=bytes) ==="
-          make -s CC=clang LLVM=1 LLVM_IAS=1 -f scripts/Makefile.build obj=drivers/staging/qcacld-3.0 'p:;@echo "real-obj-y words=$(words $(real-obj-y)) chars=$(shell echo $(real-obj-y) | wc -c)"' 2>&1 | tail -1
-          echo "=== qcacld built-in.a rule dry-run (first 200 chars) ==="
-          make -s CC=clang LLVM=1 LLVM_IAS=1 -f scripts/Makefile.build obj=drivers/staging/qcacld-3.0 -n 2>&1 | grep -m1 -E "rcSTP|symversions|for i in" | head -c 200
-          echo
           make CC=clang LLVM=1 LLVM_IAS=1 KCFLAGS="$INC" \
                V=1 -j$(nproc) Image > build.log 2>&1 || {
             echo "===== BUILD FAILED ====="
