@@ -34,12 +34,17 @@ jobs:
           export PATH="$CLANG_BIN:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
-          # Qualcomm techpack: local trace headers (TRACE_INCLUDE_PATH .) and
-          # cross-referenced driver headers need the techpack dirs on -I.
+          # Qualcomm techpack: local trace headers use TRACE_INCLUDE_PATH ., so
+          # define_trace.h's `#include "./trace.h"` (cwd-relative, falls back to -I)
+          # needs the techpack dirs that own a trace.h on -I.
+          # CRITICAL: never add kernel-tree dirs like drivers/clk/qcom here — that
+          # makes unrelated define_trace expansions (e.g. regmap.c) resolve ./trace.h
+          # to clk/qcom/trace.h and die with an implicit-declaration error.
+          # Official LOS builds add no -I at all (KCFLAGS empty under LLVM).
           # Use RELATIVE paths (absolute paths blew the arg limit) and KCFLAGS
           # (target-only; KCPPFLAGS polluted the host-tool build too).
           INC=""
-          for d in $(find techpack drivers/clk/qcom -type d 2>/dev/null | sort); do
+          for d in $(find techpack -name trace.h -type f 2>/dev/null | xargs -n1 dirname | sort -u); do
             INC="$INC -I$d"
           done
           echo "=== adding include paths ($(echo $INC | wc -w) dirs) ==="
