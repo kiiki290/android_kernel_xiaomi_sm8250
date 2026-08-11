@@ -15,10 +15,10 @@ jobs:
           sudo apt-get install -y bc bison flex libssl-dev make zip git wget cpio \
             device-tree-compiler libncurses-dev
 
-      - name: Download AOSP clang r450784d (Clang 14, tested for 4.19)
+      - name: Download AOSP clang r522817 (clang 17, LineageOS 23.2 era)
         run: |
           mkdir -p toolchain
-          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/r450784d/clang-r450784d.tar.gz -O clang.tar.gz
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r522817.tar.gz -O clang.tar.gz
           tar -xzf clang.tar.gz -C toolchain
           ls toolchain/bin/ | head -20
 
