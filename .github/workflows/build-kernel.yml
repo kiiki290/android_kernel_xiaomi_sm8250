@@ -28,8 +28,12 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
           make CC=clang LLVM=1 LLVM_IAS=1 vendor/kona-perf-pidns_defconfig
-          make CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc) Image dtbs dtbo.img > build.log 2>&1
-          tail -40 build.log
+          make CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc) Image dtbs dtbo.img > build.log 2>&1 || {
+            echo "===== BUILD FAILED, last 100 lines of build.log ====="
+            tail -100 build.log
+            exit 1
+          }
+          tail -20 build.log
           echo "=== kernel version ==="
           strings arch/arm64/boot/Image | grep -m1 "Linux version" || true
           # concatenate all DTBs -> boot dtb (same as Android dtbtool behavior)
@@ -37,6 +41,7 @@ jobs:
           ls -la arch/arm64/boot/Image arch/arm64/boot/dtbo.img dtb.img 2>/dev/null || true
 
       - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kernel-pidns
