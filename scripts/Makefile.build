@@ -495,8 +495,9 @@ ifdef builtin-target
 quiet_cmd_ar_builtin = AR      $@
       cmd_ar_builtin = $(update_lto_symversions) \
 	     rm -f $@; \
-	     $(if $(filter $(real-obj-y), $^), printf "%s " $(filter $(real-obj-y), $^) | xargs) \
-	     $(AR) rcSTP$(KBUILD_ARFLAGS) $@
+	     $(file >$@.objs,$(filter $(real-obj-y), $^)) \
+	     $(AR) rcSTP$(KBUILD_ARFLAGS) $@ @$@.objs; \
+	     rm -f $@.objs
 
 $(builtin-target): $(real-obj-y) FORCE
 	$(call if_changed,ar_builtin)
@@ -594,7 +595,7 @@ cmd_link_multi-link = $(LD) $(ld_flags) -r -o $@ $(link_multi_deps) $(cmd_secana
 
 quiet_cmd_link_multi-y = AR      $@
 cmd_link_multi-y = $(update_lto_symversions) \
-	rm -f $@; $(if $(link_multi_deps), printf "%s " $(link_multi_deps) | xargs) $(AR) rcSTP$(KBUILD_ARFLAGS) $@ \
+	rm -f $@; $(file >$@.objs,$(link_multi_deps)) $(AR) rcSTP$(KBUILD_ARFLAGS) $@ @$@.objs; rm -f $@.objs \
 	$(update_lto_symtable)
 
 quiet_cmd_link_multi-m = LD [M]  $@
