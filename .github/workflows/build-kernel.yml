@@ -15,16 +15,23 @@ jobs:
           sudo apt-get install -y bc bison flex libssl-dev make zip git wget cpio \
             device-tree-compiler libncurses-dev
 
-      - name: Download AOSP clang r522817 (clang 17, LineageOS 23.2 era)
+      - name: Download AOSP clang r563880c (clang 21, official LineageOS 23.2 compiler)
         run: |
           mkdir -p toolchain
-          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r522817.tar.gz -O clang.tar.gz
+          wget -q https://github.com/ravindu644/Android-Kernel-Tutorials/releases/download/toolchains/clang-r563880c.tar.gz -O clang.tar.gz
           tar -xzf clang.tar.gz -C toolchain
-          ls toolchain/bin/ | head -20
+          # tarball may unpack as clang-r563880c/bin/clang or directly bin/clang:
+          # locate the real clang binary so either layout works.
+          CLANG_BIN=$(dirname "$(find toolchain -path '*/bin/clang' -type f 2>/dev/null | head -1)")
+          test -n "$CLANG_BIN" || { echo "clang binary not found in tarball"; exit 1; }
+          echo "CLANG_BIN=$PWD/$CLANG_BIN" >> "$GITHUB_ENV"
+          echo "=== clang bin contents ==="
+          ls "$PWD/$CLANG_BIN" | head -20
+          "$PWD/$CLANG_BIN/clang" --version | head -2
 
       - name: Build kernel
         run: |
-          export PATH="$PWD/toolchain/bin:$PATH"
+          export PATH="$CLANG_BIN:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
           # Qualcomm techpack: local trace headers (TRACE_INCLUDE_PATH .) and
