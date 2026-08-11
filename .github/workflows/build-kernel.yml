@@ -27,14 +27,24 @@ jobs:
           export PATH="$PWD/toolchain/bin:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
-          make CC=clang LLVM=1 LLVM_IAS=1 vendor/kona-perf-pidns_defconfig
-          # Image is the only kernel-make product we need; dtb/dtbo come from the ROM
-          make CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc) Image > build.log 2>&1 || {
-            echo "===== BUILD FAILED, last 100 lines of build.log ====="
-            tail -100 build.log
+          # Qualcomm techpack: local trace headers (TRACE_INCLUDE_PATH .) and
+          # cross-referenced driver headers need ALL techpack dirs + clk/qcom on -I
+          INC=""
+          for d in $(find techpack drivers/clk/qcom -type d 2>/dev/null | sort); do
+            INC="$INC -I$(pwd)/$d"
+          done
+          echo "=== adding include paths ($(echo $INC | wc -w) dirs) ==="
+          make CC=clang LLVM=1 LLVM_IAS=1 KCPPFLAGS="$INC" vendor/kona-perf-pidns_defconfig
+          make CC=clang LLVM=1 LLVM_IAS=1 KCPPFLAGS="$INC" \
+               V=1 -j$(nproc) Image > build.log 2>&1 || {
+            echo "===== BUILD FAILED ====="
+            # print the clang command line (V=1) of the first failing file, plus the error
+            awk '/\.c$/ && /clang/ {cmd=$0} /fatal error/ {print "--- COMPILE CMD (truncated) ---"; print substr(cmd,1,1500); print "--- ERROR ---"; print; exit}' build.log
+            echo "=== last 20 lines ==="
+            tail -20 build.log
             exit 1
           }
-          tail -20 build.log
+          tail -10 build.log
           echo "=== kernel version ==="
           strings arch/arm64/boot/Image | grep -m1 "Linux version" || true
           ls -la arch/arm64/boot/Image
